@@ -25,7 +25,7 @@ To use this in your golang project, import `github.com/amitbet/dicom` and then y
 p, err := dicom.NewParserFromFile("myfile.dcm", nil)
 opts := dicom.ParseOptions{DropPixelData: true}
 
-element := p.ParseNext(opts) // parse and return the next dicom element
+element := p.ParseNext(opts,nil) // parse and return the next dicom element
 // or
 dataset, err := p.Parse(opts) // parse whole dicom
 ```

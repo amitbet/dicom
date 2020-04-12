@@ -3,6 +3,7 @@ package dicom_test
 import (
 	"log"
 	"os"
+	"sort"
 	"testing"
 
 	"github.com/amitbet/dicom"
@@ -31,6 +32,7 @@ func TestAllFiles(t *testing.T) {
 	require.NoError(t, err)
 	names, err := dir.Readdirnames(0)
 	require.NoError(t, err)
+	sort.Strings(names)
 	for _, name := range names {
 		t.Logf("Reading %s", name)
 		_ = mustReadFile("examples/"+name, dicom.ParseOptions{})

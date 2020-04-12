@@ -23,7 +23,7 @@ type Parser interface {
 	// Parse DICOM data
 	Parse(options ParseOptions) (*element.DataSet, error)
 	// ParseNext reads and parses the next element
-	ParseNext(options ParseOptions) *element.Element
+	ParseNext(options ParseOptions, itemContext []interface{}) *element.Element
 	// DecoderError fetches an error (if exists) from the dicomio.Decoder
 	DecoderError() error // This should go away as we continue refactors
 	// Finish should be called after manually parsing elements using ParseNext (instead of Parse)
@@ -122,7 +122,7 @@ func (p *parser) Parse(options ParseOptions) (*element.DataSet, error) {
 	// Read the list of elements.
 	for p.decoder.Len() > 0 {
 		startLen := p.decoder.Len()
-		elem := p.ParseNext(options)
+		elem := p.ParseNext(options, nil)
 		if p.decoder.Len() >= startLen { // Avoid silent infinite looping.
 			panic(fmt.Sprintf("ReadElement failed to consume data: %d %d: %v", startLen, p.decoder.Len(), p.decoder.Error()))
 		}
@@ -164,7 +164,7 @@ func (p *parser) Parse(options ParseOptions) (*element.DataSet, error) {
 	return p.parsedElements, p.decoder.Error()
 }
 
-func (p *parser) ParseNext(options ParseOptions) *element.Element {
+func (p *parser) ParseNext(options ParseOptions, itemContext []interface{}) *element.Element {
 	tag := readTag(p.decoder)
 	if tag == dicomtag.PixelData && options.DropPixelData {
 		return element.EndOfData
@@ -263,8 +263,18 @@ func (p *parser) ParseNext(options ParseOptions) *element.Element {
 				p.decoder.SetError(errors.New("dicom.ReadElement: parsedData is nil, must exist to parse NativeData pixel data"))
 				return nil // TODO(suyash) investigate error handling in this library
 			}
+			var err error
+			var image *element.PixelDataInfo
 
-			image, _, err := readNativeFrames(p.decoder, p.parsedElements, p.frameChannel)
+			if itemContext != nil {
+				itemDataset := element.DataSet{Elements: []*element.Element{}}
+				for _, elem := range itemContext {
+					itemDataset.Elements = append(itemDataset.Elements, elem.(*element.Element))
+				}
+				image, _, err = readNativeFrames(p.decoder, &itemDataset, p.frameChannel)
+			} else {
+				image, _, err = readNativeFrames(p.decoder, p.parsedElements, p.frameChannel)
+			}
 
 			if err != nil {
 				p.decoder.SetError(err)
@@ -285,7 +295,7 @@ func (p *parser) ParseNext(options ParseOptions) *element.Element {
 			//             Item Any*N                     (when Item.VL has a defined value)
 			for {
 				// Makes sure to return all sub elements even if the tag is not in the return tags list of options or is greater than the Stop At Tag
-				item := p.ParseNext(ParseOptions{})
+				item := p.ParseNext(ParseOptions{}, nil)
 				if p.decoder.Error() != nil {
 					break
 				}
@@ -305,7 +315,7 @@ func (p *parser) ParseNext(options ParseOptions) *element.Element {
 			p.decoder.PushLimit(int64(vl))
 			for p.decoder.Len() > 0 {
 				// Makes sure to return all sub elements even if the tag is not in the return tags list of options or is greater than the Stop At Tag
-				item := p.ParseNext(ParseOptions{})
+				item := p.ParseNext(ParseOptions{}, nil)
 				if p.decoder.Error() != nil {
 					break
 				}
@@ -322,11 +332,14 @@ func (p *parser) ParseNext(options ParseOptions) *element.Element {
 			// Format: Item Any* ItemDelimitationItem
 			for {
 				// Makes sure to return all sub elements even if the tag is not in the return tags list of options or is greater than the Stop At Tag
-				subelem := p.ParseNext(ParseOptions{})
+				subelem := p.ParseNext(ParseOptions{}, data)
 				if p.decoder.Error() != nil {
 					break
 				}
 				if subelem.Tag == dicomtag.ItemDelimitationItem {
+					break
+				}
+				if subelem.Tag == dicomtag.SequenceDelimitationItem {
 					break
 				}
 				data = append(data, subelem)
@@ -336,7 +349,7 @@ func (p *parser) ParseNext(options ParseOptions) *element.Element {
 			p.decoder.PushLimit(int64(vl))
 			for p.decoder.Len() > 0 {
 				// Makes sure to return all sub elements even if the tag is not in the return tags list of options or is greater than the Stop At Tag
-				subelem := p.ParseNext(ParseOptions{})
+				subelem := p.ParseNext(ParseOptions{}, data)
 				if p.decoder.Error() != nil {
 					break
 				}
@@ -450,7 +463,7 @@ func (p *parser) parseFileHeader() []*element.Element {
 	}
 
 	// (0002,0000) MetaElementGroupLength
-	metaElem := p.ParseNext(ParseOptions{})
+	metaElem := p.ParseNext(ParseOptions{}, nil)
 	if p.decoder.Error() != nil {
 		return nil
 	}
@@ -472,7 +485,7 @@ func (p *parser) parseFileHeader() []*element.Element {
 	p.decoder.PushLimit(metaLength)
 	defer p.decoder.PopLimit()
 	for p.decoder.Len() > 0 {
-		elem := p.ParseNext(ParseOptions{})
+		elem := p.ParseNext(ParseOptions{}, nil)
 		if p.decoder.Error() != nil {
 			break
 		}

@@ -3,7 +3,7 @@ dicom
 
 *.DS_Store
 *.sublime-*
-
+*.dcm
 .idea
 build
 vendor

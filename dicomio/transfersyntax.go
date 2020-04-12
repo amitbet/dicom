@@ -4,7 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 
-	"github.com/suyashkumar/dicom/dicomuid"
+	"github.com/amitbet/dicom/dicomuid"
 )
 
 // Standard list of transfer syntaxes.

@@ -10,11 +10,11 @@ import (
 	"os"
 	"sync"
 
-	"github.com/suyashkumar/dicom"
-	"github.com/suyashkumar/dicom/dicomlog"
-	"github.com/suyashkumar/dicom/dicomtag"
-	"github.com/suyashkumar/dicom/element"
-	"github.com/suyashkumar/dicom/frame"
+	"github.com/amitbet/dicom"
+	"github.com/amitbet/dicom/dicomlog"
+	"github.com/amitbet/dicom/dicomtag"
+	"github.com/amitbet/dicom/element"
+	"github.com/amitbet/dicom/frame"
 )
 
 var (

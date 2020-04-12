@@ -1,16 +1,16 @@
 <p align="center">
-  <img src="https://suyashkumar.com/assets/img/magnetic-resonance.png" width="125px"/>
+  <img src="https://amitbet.com/assets/img/magnetic-resonance.png" width="125px"/>
   <h3 align="center">dicom</h3>
   <p align="center">High Performance Golang DICOM Medical Image Parser<p>
-  <p align="center"> <a href="https://travis-ci.org/suyashkumar/dicom"><img src="https://travis-ci.org/suyashkumar/dicom.svg?branch=master" /></a> <a href="https://godoc.org/github.com/suyashkumar/dicom"><img src="https://godoc.org/github.com/suyashkumar/dicom?status.svg" alt=""></a> 
+  <p align="center"> <a href="https://travis-ci.org/amitbet/dicom"><img src="https://travis-ci.org/amitbet/dicom.svg?branch=master" /></a> <a href="https://godoc.org/github.com/amitbet/dicom"><img src="https://godoc.org/github.com/amitbet/dicom?status.svg" alt=""></a> 
   </p>
 </p>
 
-:eyes: Note: please tell me more about how you use this tool [here](https://github.com/suyashkumar/dicom/issues/56) (or how you plan to use it).
+:eyes: Note: please tell me more about how you use this tool [here](https://github.com/amitbet/dicom/issues/56) (or how you plan to use it).
 
 This is a (hard-ish) fork of work I did at [gradienthealth](https://github.com/gradienthealth/dicom) which built on top of [go-dicom](https://github.com/gillesdemey/go-dicom)--a golang DICOM image parsing library and command line tool. We have been working on this package with the goal of building a full-featured and high-performance dicom parser in Golang with major new features and improvements. I will continue to add some (potentially API breaking) improvements on my repository fork here, and have added many such improvements (and general maintenance) to date.
 
-:eyes: Note: there is a fairly significant rewrite and refactor I am exploring that's in progress at branch [s/1.0-rewrite](https://github.com/suyashkumar/dicom/tree/s/1.0-rewrite), which further cleans up the API, rewrites critical sections of the code, improves performance, and more. 
+:eyes: Note: there is a fairly significant rewrite and refactor I am exploring that's in progress at branch [s/1.0-rewrite](https://github.com/amitbet/dicom/tree/s/1.0-rewrite), which further cleans up the API, rewrites critical sections of the code, improves performance, and more. 
 
 So far, improvements that have made on top of [go-dicom](https://github.com/gillesdemey/go-dicom) include: 
 - [x] parsing and extracting multi-frame DICOM imagery (both encapsulated and native pixel data)
@@ -20,7 +20,7 @@ So far, improvements that have made on top of [go-dicom](https://github.com/gill
 - [x] General refactors to the [go-dicom](https://github.com/gillesdemey/go-dicom) code (though there's more work to be done here) for maintainability an readability. 
 
 ## Usage
-To use this in your golang project, import `github.com/suyashkumar/dicom` and then you can use `dicom.Parser` for your parsing needs:
+To use this in your golang project, import `github.com/amitbet/dicom` and then you can use `dicom.Parser` for your parsing needs:
 ```go 
 p, err := dicom.NewParserFromFile("myfile.dcm", nil)
 opts := dicom.ParseOptions{DropPixelData: true}
@@ -29,16 +29,16 @@ element := p.ParseNext(opts) // parse and return the next dicom element
 // or
 dataset, err := p.Parse(opts) // parse whole dicom
 ```
-More details about the package can be found in the [godoc](https://godoc.org/github.com/suyashkumar/dicom)
+More details about the package can be found in the [godoc](https://godoc.org/github.com/amitbet/dicom)
 
 ## CLI Tool
 A CLI tool that uses this package to parse imagery and metadata out of DICOMs is provided in the `dicomutil` package. All dicom tags present are printed to STDOUT by default. 
 
 ### Installation
-You can download the prebuilt binaries from the [releases tab](https://github.com/suyashkumar/dicom/releases), or use the following to download the binary at the command line using my [getbin tool](https://github.com/suyashkumar/getbin):
+You can download the prebuilt binaries from the [releases tab](https://github.com/amitbet/dicom/releases), or use the following to download the binary at the command line using my [getbin tool](https://github.com/amitbet/getbin):
 
 ```sh
-wget -qO- "https://getbin.io/suyashkumar/dicom" | tar xvz
+wget -qO- "https://getbin.io/amitbet/dicom" | tar xvz
 ```
 (This attempts to infer your OS and 301 redirects `wget` to the latest github release asset for your system. Downloads come from GitHub releases).
 ### Usage
@@ -50,7 +50,7 @@ Note: for some dicoms (with native pixel data) no automatic intensity scaling is
 To build the tool for all platforms (Mac, Windows, Linux) from source using docker, execute the following in the cloned repo:
 ```bash
 docker build . -t godicom
-docker run -it -v $PWD/build:/go/src/github.com/suyashkumar/dicom/build godicom make release
+docker run -it -v $PWD/build:/go/src/github.com/amitbet/dicom/build godicom make release
 ```
 You can then use the binaries that will show up in the `build` folder in your current working directory
 ### Build manually

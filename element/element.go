@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/suyashkumar/dicom/dicomtag"
-	"github.com/suyashkumar/dicom/frame"
+	"github.com/amitbet/dicom/dicomtag"
+	"github.com/amitbet/dicom/frame"
 )
 
 // Constants

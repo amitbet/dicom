@@ -5,13 +5,13 @@ import (
 	"os"
 	"testing"
 
+	"github.com/amitbet/dicom"
+	"github.com/amitbet/dicom/dicomtag"
+	"github.com/amitbet/dicom/dicomuid"
+	"github.com/amitbet/dicom/element"
+	"github.com/amitbet/dicom/write"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/suyashkumar/dicom"
-	"github.com/suyashkumar/dicom/dicomtag"
-	"github.com/suyashkumar/dicom/dicomuid"
-	"github.com/suyashkumar/dicom/element"
-	"github.com/suyashkumar/dicom/write"
 )
 
 func mustReadFile(path string, options dicom.ParseOptions) *element.DataSet {

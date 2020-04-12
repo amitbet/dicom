@@ -3,8 +3,8 @@ package element
 import (
 	"encoding/binary"
 
-	"github.com/suyashkumar/dicom/dicomio"
-	"github.com/suyashkumar/dicom/dicomtag"
+	"github.com/amitbet/dicom/dicomio"
+	"github.com/amitbet/dicom/dicomtag"
 )
 
 // DataSet represents contents of one DICOM file.

@@ -3,11 +3,11 @@ package query_test
 import (
 	"testing"
 
+	"github.com/amitbet/dicom"
+	"github.com/amitbet/dicom/dicomtag"
+	"github.com/amitbet/dicom/element"
+	"github.com/amitbet/dicom/query"
 	"github.com/stretchr/testify/assert"
-	"github.com/suyashkumar/dicom"
-	"github.com/suyashkumar/dicom/dicomtag"
-	"github.com/suyashkumar/dicom/element"
-	"github.com/suyashkumar/dicom/query"
 )
 
 func TestParse0(t *testing.T) {

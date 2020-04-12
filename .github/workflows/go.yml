@@ -1,4 +1,4 @@
-name: suyashkumar/dicom build
+name: amitbet/dicom build
 on: [push, pull_request]
 jobs:
 
@@ -20,7 +20,7 @@ jobs:
       run: | 
             export GOPATH=$HOME/go
             export GOBIN=$GOPATH/bin
-            export REPO_PATH=$GOPATH/src/github.com/suyashkumar/dicom
+            export REPO_PATH=$GOPATH/src/github.com/amitbet/dicom
             mkdir -p $GOBIN 
             export PATH=$PATH:/home/runner/go/bin
             mkdir -p $REPO_PATH
@@ -33,7 +33,7 @@ jobs:
       run: |
             export GOPATH=$HOME/go
             export GOBIN=$GOPATH/bin
-            export REPO_PATH=$GOPATH/src/github.com/suyashkumar/dicom
+            export REPO_PATH=$GOPATH/src/github.com/amitbet/dicom
             export PATH=$PATH:/home/runner/go/bin
             cd $REPO_PATH
             make
@@ -42,7 +42,7 @@ jobs:
       run: |
             export GOPATH=$HOME/go
             export GOBIN=$GOPATH/bin 
-            export REPO_PATH=$GOPATH/src/github.com/suyashkumar/dicom
+            export REPO_PATH=$GOPATH/src/github.com/amitbet/dicom
             export PATH=$PATH:/home/runner/go/bin
             cd $REPO_PATH
             make test

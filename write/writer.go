@@ -8,11 +8,11 @@ import (
 
 	"bytes"
 
-	"github.com/suyashkumar/dicom/constants"
-	"github.com/suyashkumar/dicom/dicomio"
-	"github.com/suyashkumar/dicom/dicomlog"
-	"github.com/suyashkumar/dicom/dicomtag"
-	"github.com/suyashkumar/dicom/element"
+	"github.com/amitbet/dicom/constants"
+	"github.com/amitbet/dicom/dicomio"
+	"github.com/amitbet/dicom/dicomlog"
+	"github.com/amitbet/dicom/dicomtag"
+	"github.com/amitbet/dicom/element"
 )
 
 // Option is the type used for options for writing DICOM elements

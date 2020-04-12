@@ -5,9 +5,9 @@ import (
 	"regexp"
 	"strconv"
 
+	"github.com/amitbet/dicom/dicomtag"
+	"github.com/amitbet/dicom/element"
 	"github.com/gobwas/glob"
-	"github.com/suyashkumar/dicom/dicomtag"
-	"github.com/suyashkumar/dicom/element"
 )
 
 func querySequence(elem *element.Element, f *element.Element) (match bool, err error) {

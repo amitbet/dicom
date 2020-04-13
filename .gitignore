@@ -4,6 +4,7 @@ dicom
 *.DS_Store
 *.sublime-*
 *.dcm
+*.vid
 .idea
 build
 vendor

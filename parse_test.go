@@ -21,6 +21,8 @@ func mustReadFile(path string, options dicom.ParseOptions) *element.DataSet {
 		log.Panic(err)
 	}
 	data, err := p.Parse(options)
+	// pixelData, _ := data.FindElementByName("PixelData")
+	// _ = pixelData
 	if err != nil {
 		log.Panic(err)
 	}
@@ -34,6 +36,9 @@ func TestAllFiles(t *testing.T) {
 	require.NoError(t, err)
 	sort.Strings(names)
 	for _, name := range names {
+		if name == ".DS_Store" {
+			continue
+		}
 		t.Logf("Reading %s", name)
 		_ = mustReadFile("examples/"+name, dicom.ParseOptions{})
 	}

@@ -246,6 +246,9 @@ func NewDecoder(
 		limit:    limit,
 	}
 }
+func (d *Decoder) GetPos() int64 {
+	return d.pos
+}
 
 // NewBytesDecoder creates a decoder that reads from a sequence of bytes. See
 // NewDecoder() for explanation of other parameters.

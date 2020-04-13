@@ -31,6 +31,8 @@ type Frame struct {
 	Encapsulated     bool
 	EncapsulatedData EncapsulatedFrame
 	NativeData       NativeFrame
+	FileOffset       int64
+	SizeInBytes      int
 }
 
 func (f *Frame) IsEncapsulated() bool { return f.Encapsulated }

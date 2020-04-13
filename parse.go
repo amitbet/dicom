@@ -231,7 +231,11 @@ func (p *parser) ParseNext(options ParseOptions, itemContext []interface{}) *ele
 				dicomlog.Vprintf(1, "dicom.ReadElement: Multiple images not supported yet. Combining them into a byte sequence: %v", image.Offsets)
 			}
 			for p.decoder.Len() > 0 {
+				frameOffset := p.decoder.GetPos() + 8 //current pos + itemTag(32bit) + length(32bit)
+
 				chunk, endOfItems := readRawItem(p.decoder)
+				frameSize := len(chunk)
+
 				if p.decoder.Error() != nil {
 					break
 				}
@@ -240,11 +244,14 @@ func (p *parser) ParseNext(options ParseOptions, itemContext []interface{}) *ele
 				}
 
 				// Construct frame
+
 				f := frame.Frame{
 					Encapsulated: true,
 					EncapsulatedData: frame.EncapsulatedFrame{
 						Data: chunk,
 					},
+					FileOffset:  frameOffset,
+					SizeInBytes: frameSize,
 				}
 
 				image.Frames = append(image.Frames, f)
@@ -583,6 +590,8 @@ func readNativeFrames(d *dicomio.Decoder, parsedData *element.DataSet, frameChan
 				Cols:          int(cols.MustGetInt()),
 				Data:          make([][]int, int(pixelsPerFrame)),
 			},
+			FileOffset:  d.GetPos(),
+			SizeInBytes: pixelsPerFrame * samplesPerPixel * (bitsAllocated / 2),
 		}
 		for pixel := 0; pixel < int(pixelsPerFrame); pixel++ {
 			currentPixel := make([]int, samplesPerPixel)
@@ -595,6 +604,7 @@ func readNativeFrames(d *dicomio.Decoder, parsedData *element.DataSet, frameChan
 			}
 			currentFrame.NativeData.Data[pixel] = currentPixel
 		}
+
 		image.Frames[frameIdx] = currentFrame
 		if frameChan != nil {
 			frameChan <- &currentFrame // write the current frame to the frameChan
@@ -637,6 +647,7 @@ func readRawItem(d *dicomio.Decoder) ([]byte, bool) {
 		d.SetErrorf("Expect NA item, but found %s", vr)
 		return nil, true
 	}
+
 	return d.ReadBytes(int(vl)), false
 }
 

@@ -25,10 +25,10 @@ To use this in your golang project, import `github.com/amitbet/dicom` and then y
 ```go 
 p, err := dicom.NewParserFromFile("myfile.dcm", nil)
 opts := dicom.ParseOptions{DropPixelData: true}
-
-element := p.ParseNext(nil) // parse and return the next dicom element
+p.Opts = opts
+element := p.ParseNext() // parse and return the next dicom element
 // or
-dataset, err := p.Parse(opts) // parse whole dicom
+dataset, err := p.Parse() // parse whole dicom
 ```
 More details about the package can be found in the [godoc](https://godoc.org/github.com/amitbet/dicom)
 

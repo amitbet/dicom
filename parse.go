@@ -122,7 +122,7 @@ func (p *Parser) Parse() (*element.DataSet, error) {
 	// Read the list of elements.
 	for p.decoder.Len() > 0 {
 		startLen := p.decoder.Len()
-		elem := p.ParseNext(nil)
+		elem := p.parseNext(nil)
 		if p.decoder.Len() >= startLen { // Avoid silent infinite looping.
 			panic(fmt.Sprintf("ReadElement failed to consume data: %d %d: %v", startLen, p.decoder.Len(), p.decoder.Error()))
 		}
@@ -164,7 +164,11 @@ func (p *Parser) Parse() (*element.DataSet, error) {
 	return p.parsedElements, p.decoder.Error()
 }
 
-func (p *Parser) ParseNext(itemContext []interface{}) *element.Element {
+func (p *Parser) ParseNext() *element.Element {
+	return p.parseNext(nil)
+}
+
+func (p *Parser) parseNext(itemContext []interface{}) *element.Element {
 	tag := readTag(p.decoder)
 	if tag == dicomtag.PixelData && p.Opts.DropPixelData && itemContext == nil {
 		return element.EndOfData
@@ -306,7 +310,7 @@ func (p *Parser) ParseNext(itemContext []interface{}) *element.Element {
 			//             Item Any*N                     (when Item.VL has a defined value)
 			for {
 				// Makes sure to return all sub elements even if the tag is not in the return tags list of options or is greater than the Stop At Tag
-				item := p.ParseNext(nil)
+				item := p.parseNext(nil)
 				if p.decoder.Error() != nil {
 					break
 				}
@@ -326,7 +330,7 @@ func (p *Parser) ParseNext(itemContext []interface{}) *element.Element {
 			p.decoder.PushLimit(int64(vl))
 			for p.decoder.Len() > 0 {
 				// Makes sure to return all sub elements even if the tag is not in the return tags list of options or is greater than the Stop At Tag
-				item := p.ParseNext(nil)
+				item := p.parseNext(nil)
 				if p.decoder.Error() != nil {
 					break
 				}
@@ -343,7 +347,7 @@ func (p *Parser) ParseNext(itemContext []interface{}) *element.Element {
 			// Format: Item Any* ItemDelimitationItem
 			for {
 				// Makes sure to return all sub elements even if the tag is not in the return tags list of options or is greater than the Stop At Tag
-				subelem := p.ParseNext(data)
+				subelem := p.parseNext(data)
 				if p.decoder.Error() != nil {
 					break
 				}
@@ -360,7 +364,7 @@ func (p *Parser) ParseNext(itemContext []interface{}) *element.Element {
 			p.decoder.PushLimit(int64(vl))
 			for p.decoder.Len() > 0 {
 				// Makes sure to return all sub elements even if the tag is not in the return tags list of options or is greater than the Stop At Tag
-				subelem := p.ParseNext(data)
+				subelem := p.parseNext(data)
 				if p.decoder.Error() != nil {
 					break
 				}
@@ -474,7 +478,7 @@ func (p *Parser) parseFileHeader() []*element.Element {
 	}
 
 	// (0002,0000) MetaElementGroupLength
-	metaElem := p.ParseNext(nil)
+	metaElem := p.parseNext(nil)
 	if p.decoder.Error() != nil {
 		return nil
 	}
@@ -496,7 +500,7 @@ func (p *Parser) parseFileHeader() []*element.Element {
 	p.decoder.PushLimit(metaLength)
 	defer p.decoder.PopLimit()
 	for p.decoder.Len() > 0 {
-		elem := p.ParseNext(nil)
+		elem := p.parseNext(nil)
 		if p.decoder.Error() != nil {
 			break
 		}

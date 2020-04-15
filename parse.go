@@ -18,31 +18,31 @@ import (
 	"github.com/amitbet/dicom/frame"
 )
 
-// Parser represents an entity that can read and parse DICOMs
-type Parser interface {
-	// Parse DICOM data
-	Parse(options ParseOptions) (*element.DataSet, error)
-	// ParseNext reads and parses the next element
-	ParseNext(options ParseOptions, itemContext []interface{}) *element.Element
-	// DecoderError fetches an error (if exists) from the dicomio.Decoder
-	DecoderError() error // This should go away as we continue refactors
-	// Finish should be called after manually parsing elements using ParseNext (instead of Parse)
-	Finish() error // This should maybe go away as we continue refactors
-}
+// // Parser represents an entity that can read and parse DICOMs
+// type Parser interface {
+// 	// Parse DICOM data
+// 	Parse(options ParseOptions) (*element.DataSet, error)
+// 	// ParseNext reads and parses the next element
+// 	ParseNext(options ParseOptions, itemContext []interface{}) *element.Element
+// 	// DecoderError fetches an error (if exists) from the dicomio.Decoder
+// 	DecoderError() error // This should go away as we continue refactors
+// 	// Finish should be called after manually parsing elements using ParseNext (instead of Parse)
+// 	Finish() error // This should maybe go away as we continue refactors
+// }
 
-// parser implements Parser
-type parser struct {
+// Parser implements Parser
+type Parser struct {
 	decoder        *dicomio.Decoder
 	parsedElements *element.DataSet
-	op             ParseOptions
+	Opts           ParseOptions
 	frameChannel   chan *frame.Frame
 	file           *os.File // may be populated if coming from file
 }
 
 // NewParser initializes and returns a new Parser
-func NewParser(in io.Reader, bytesToRead int64, frameChannel chan *frame.Frame) (Parser, error) {
+func NewParser(in io.Reader, bytesToRead int64, frameChannel chan *frame.Frame) (*Parser, error) {
 	buffer := dicomio.NewDecoder(bufio.NewReader(in), bytesToRead, binary.LittleEndian, dicomio.ExplicitVR)
-	p := parser{
+	p := Parser{
 		decoder:      buffer,
 		frameChannel: frameChannel,
 	}
@@ -56,12 +56,12 @@ func NewParser(in io.Reader, bytesToRead int64, frameChannel chan *frame.Frame) 
 }
 
 // NewParserFromBytes initializes and returns a new Parser from []byte
-func NewParserFromBytes(data []byte, frameChannel chan *frame.Frame) (Parser, error) {
+func NewParserFromBytes(data []byte, frameChannel chan *frame.Frame) (*Parser, error) {
 	return NewParser(bytes.NewBuffer(data), int64(len(data)), frameChannel)
 }
 
 // NewParserFromFile initializes and returns a new dicom Parser from a file path
-func NewParserFromFile(path string, frameChannel chan *frame.Frame) (Parser, error) {
+func NewParserFromFile(path string, frameChannel chan *frame.Frame) (*Parser, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, err
@@ -74,14 +74,14 @@ func NewParserFromFile(path string, frameChannel chan *frame.Frame) (Parser, err
 	if err != nil {
 		return nil, err
 	}
-	p.(*parser).file = file
+	p.file = file
 	return p, err
 }
 
 // NewParserFromDecoder returns parser from a decoder
 // TODO: remove or cleanup, currently needed for testing
-func NewParserFromDecoder(decoder *dicomio.Decoder, frameChannel chan *frame.Frame) (Parser, error) {
-	p := parser{
+func NewParserFromDecoder(decoder *dicomio.Decoder, frameChannel chan *frame.Frame) (*Parser, error) {
+	p := Parser{
 		decoder:      decoder,
 		frameChannel: frameChannel,
 	}
@@ -97,15 +97,15 @@ func NewParserFromDecoder(decoder *dicomio.Decoder, frameChannel chan *frame.Fra
 
 // NewUninitializedParserFromDecoder returns parser from a decoder
 // TODO: remove or cleanup, currently needed for testing
-func NewUninitializedParserFromDecoder(decoder *dicomio.Decoder, frameChannel chan *frame.Frame) Parser {
-	p := parser{
+func NewUninitializedParserFromDecoder(decoder *dicomio.Decoder, frameChannel chan *frame.Frame) *Parser {
+	p := Parser{
 		decoder:      decoder,
 		frameChannel: frameChannel,
 	}
 	return &p
 }
 
-func (p *parser) Parse(options ParseOptions) (*element.DataSet, error) {
+func (p *Parser) Parse(options ParseOptions) (*element.DataSet, error) {
 	// Change the transfer syntax for the rest of the file.
 	endian, implicit, err := p.parsedElements.TransferSyntax()
 	if err != nil {
@@ -122,7 +122,7 @@ func (p *parser) Parse(options ParseOptions) (*element.DataSet, error) {
 	// Read the list of elements.
 	for p.decoder.Len() > 0 {
 		startLen := p.decoder.Len()
-		elem := p.ParseNext(options, nil)
+		elem := p.ParseNext(nil)
 		if p.decoder.Len() >= startLen { // Avoid silent infinite looping.
 			panic(fmt.Sprintf("ReadElement failed to consume data: %d %d: %v", startLen, p.decoder.Len(), p.decoder.Error()))
 		}
@@ -164,14 +164,14 @@ func (p *parser) Parse(options ParseOptions) (*element.DataSet, error) {
 	return p.parsedElements, p.decoder.Error()
 }
 
-func (p *parser) ParseNext(options ParseOptions, itemContext []interface{}) *element.Element {
+func (p *Parser) ParseNext(itemContext []interface{}) *element.Element {
 	tag := readTag(p.decoder)
-	if tag == dicomtag.PixelData && options.DropPixelData {
+	if tag == dicomtag.PixelData && p.Opts.DropPixelData {
 		return element.EndOfData
 	}
 
 	// Return nil if the tag is greater than the StopAtTag if a StopAtTag is given
-	if options.StopAtTag != nil && tag.Group >= options.StopAtTag.Group && tag.Element >= options.StopAtTag.Element {
+	if p.Opts.StopAtTag != nil && tag.Group >= p.Opts.StopAtTag.Group && tag.Element >= p.Opts.StopAtTag.Element {
 		return element.EndOfData
 	}
 	// The elements for group 0xFFFE should be Encoded as Implicit VR.
@@ -302,7 +302,7 @@ func (p *parser) ParseNext(options ParseOptions, itemContext []interface{}) *ele
 			//             Item Any*N                     (when Item.VL has a defined value)
 			for {
 				// Makes sure to return all sub elements even if the tag is not in the return tags list of options or is greater than the Stop At Tag
-				item := p.ParseNext(ParseOptions{}, nil)
+				item := p.ParseNext(nil)
 				if p.decoder.Error() != nil {
 					break
 				}
@@ -322,7 +322,7 @@ func (p *parser) ParseNext(options ParseOptions, itemContext []interface{}) *ele
 			p.decoder.PushLimit(int64(vl))
 			for p.decoder.Len() > 0 {
 				// Makes sure to return all sub elements even if the tag is not in the return tags list of options or is greater than the Stop At Tag
-				item := p.ParseNext(ParseOptions{}, nil)
+				item := p.ParseNext(nil)
 				if p.decoder.Error() != nil {
 					break
 				}
@@ -339,7 +339,7 @@ func (p *parser) ParseNext(options ParseOptions, itemContext []interface{}) *ele
 			// Format: Item Any* ItemDelimitationItem
 			for {
 				// Makes sure to return all sub elements even if the tag is not in the return tags list of options or is greater than the Stop At Tag
-				subelem := p.ParseNext(ParseOptions{}, data)
+				subelem := p.ParseNext(data)
 				if p.decoder.Error() != nil {
 					break
 				}
@@ -356,7 +356,7 @@ func (p *parser) ParseNext(options ParseOptions, itemContext []interface{}) *ele
 			p.decoder.PushLimit(int64(vl))
 			for p.decoder.Len() > 0 {
 				// Makes sure to return all sub elements even if the tag is not in the return tags list of options or is greater than the Stop At Tag
-				subelem := p.ParseNext(ParseOptions{}, data)
+				subelem := p.ParseNext(data)
 				if p.decoder.Error() != nil {
 					break
 				}
@@ -443,11 +443,11 @@ func (p *parser) ParseNext(options ParseOptions, itemContext []interface{}) *ele
 	return elem
 }
 
-func (p *parser) DecoderError() error {
+func (p *Parser) DecoderError() error {
 	return p.decoder.Error()
 }
 
-func (p *parser) Finish() error {
+func (p *Parser) Finish() error {
 	// if we've been reading from a file, close it
 	if p.file != nil {
 		p.file.Close()
@@ -458,7 +458,7 @@ func (p *parser) Finish() error {
 // parseFileHeader consumes the DICOM magic header and metadata elements (whose
 // elements with tag group==2) from a Dicom file. Errors are reported through
 // decoder.Error().
-func (p *parser) parseFileHeader() []*element.Element {
+func (p *Parser) parseFileHeader() []*element.Element {
 	p.decoder.PushTransferSyntax(binary.LittleEndian, dicomio.ExplicitVR)
 	defer p.decoder.PopTransferSyntax()
 	p.decoder.Skip(128) // skip preamble
@@ -470,7 +470,7 @@ func (p *parser) parseFileHeader() []*element.Element {
 	}
 
 	// (0002,0000) MetaElementGroupLength
-	metaElem := p.ParseNext(ParseOptions{}, nil)
+	metaElem := p.ParseNext(nil)
 	if p.decoder.Error() != nil {
 		return nil
 	}
@@ -492,7 +492,7 @@ func (p *parser) parseFileHeader() []*element.Element {
 	p.decoder.PushLimit(metaLength)
 	defer p.decoder.PopLimit()
 	for p.decoder.Len() > 0 {
-		elem := p.ParseNext(ParseOptions{}, nil)
+		elem := p.ParseNext(nil)
 		if p.decoder.Error() != nil {
 			break
 		}
@@ -627,7 +627,7 @@ func readNativeFrames(d *dicomio.Decoder, parsedData *element.DataSet, frameChan
 
 // Read an Item object as raw bytes, w/o parsing them into DataElement. Used to
 // parse pixel data.
-func (p *parser) readRawItem(d *dicomio.Decoder) ([]byte, bool) {
+func (p *Parser) readRawItem(d *dicomio.Decoder) ([]byte, bool) {
 	tag := readTag(d)
 	// Item is always encoded implicit. PS3.6 7.5
 	vr, vl := p.readImplicit(d, tag)
@@ -658,7 +658,7 @@ func (p *parser) readRawItem(d *dicomio.Decoder) ([]byte, bool) {
 
 // Read the basic offset table. This is the first Item object embedded inside
 // PixelData element. P3.5 8.2. P3.5, A4 has a better example.
-func (p *parser) readBasicOffsetTable(d *dicomio.Decoder) []uint32 {
+func (p *Parser) readBasicOffsetTable(d *dicomio.Decoder) []uint32 {
 	data, endOfData := p.readRawItem(d)
 	if endOfData {
 		d.SetErrorf("basic offset table not found")
@@ -687,7 +687,7 @@ func readTag(buffer *dicomio.Decoder) dicomtag.Tag {
 }
 
 // Read the VR from the DICOM ditionary The VL is a 32-bit unsigned integer
-func (p *parser) readImplicit(buffer *dicomio.Decoder, tag dicomtag.Tag) (string, uint32) {
+func (p *Parser) readImplicit(buffer *dicomio.Decoder, tag dicomtag.Tag) (string, uint32) {
 	vr := "UN"
 	if entry, err := dicomtag.Find(tag); err == nil {
 		vr = entry.VR
@@ -698,7 +698,7 @@ func (p *parser) readImplicit(buffer *dicomio.Decoder, tag dicomtag.Tag) (string
 		// odd attribute length problem
 		// this can be solved in two ways: reading vl bytes and padding with zero or reading vl+1 bytes
 		// see DCMTK dcmAcceptOddAttributeLength option: https://support.dcmtk.org/docs/dcobject_8h.html#aeec6e27698d5da091e42ff8121fa3c88
-		if p.op.ReadExtraByteForOddAttributeLength {
+		if p.Opts.ReadExtraByteForOddAttributeLength {
 			vl += 1
 		}
 	}
@@ -707,7 +707,7 @@ func (p *parser) readImplicit(buffer *dicomio.Decoder, tag dicomtag.Tag) (string
 
 // The VR is represented by the next two consecutive bytes
 // The VL depends on the VR value
-func (p *parser) readExplicit(buffer *dicomio.Decoder, tag dicomtag.Tag) (string, uint32) {
+func (p *Parser) readExplicit(buffer *dicomio.Decoder, tag dicomtag.Tag) (string, uint32) {
 	vr := buffer.ReadString(2)
 	var vl uint32
 	if vr == "US" {
@@ -733,7 +733,7 @@ func (p *parser) readExplicit(buffer *dicomio.Decoder, tag dicomtag.Tag) (string
 		// odd attribute length problem
 		// this can be solved in two ways: reading vl bytes and padding with zero or reading vl+1 bytes
 		// see DCMTK dcmAcceptOddAttributeLength option: https://support.dcmtk.org/docs/dcobject_8h.html#aeec6e27698d5da091e42ff8121fa3c88
-		if p.op.ReadExtraByteForOddAttributeLength {
+		if p.Opts.ReadExtraByteForOddAttributeLength {
 			vl += 1
 		}
 	}

@@ -17,6 +17,7 @@ import (
 
 func mustReadFile(path string, options dicom.ParseOptions) *element.DataSet {
 	p, err := dicom.NewParserFromFile(path, nil)
+	p.Opts = options
 	if err != nil {
 		log.Panic(err)
 	}
@@ -41,7 +42,7 @@ func TestAllFiles(t *testing.T) {
 			continue
 		}
 		t.Logf("Reading %s", name)
-		_ = mustReadFile("examples/"+name, dicom.ParseOptions{ReadExtraByteForOddAttributeLength: true})
+		_ = mustReadFile("examples/"+name, dicom.ParseOptions{})
 	}
 }
 
@@ -133,16 +134,17 @@ func TestReadOptions(t *testing.T) {
 	// Test Stop at Tag
 	data = mustReadFile("examples/IM-0001-0001.dcm",
 		dicom.ParseOptions{
-			DropPixelData: true,
+			//DropPixelData: true,
 			// Study Instance UID Element tag is Tag{0x0020, 0x000D}
-			StopAtTag: &dicomtag.StudyInstanceUID})
+			StopAtTag: &dicomtag.StudyInstanceUID,
+		})
 	_, err = data.FindElementByTag(dicomtag.PatientName) // Patient Name Element tag is Tag{0x0010, 0x0010}
 	if err != nil {
 		t.Error(err)
 	}
 	_, err = data.FindElementByTag(dicomtag.SeriesInstanceUID) // Series Instance UID Element tag is Tag{0x0020, 0x000E}
 	if err == nil {
-		t.Errorf("PatientName should not be present")
+		t.Errorf("SeriesInstanceUID should not be present")
 	}
 }
 

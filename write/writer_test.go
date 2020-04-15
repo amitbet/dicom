@@ -34,7 +34,7 @@ func testWriteDataElement(t *testing.T, bo binary.ByteOrder, implicit dicomio.Is
 	d := dicomio.NewBytesDecoder(data, bo, implicit)
 	p := dicom.NewUninitializedParserFromDecoder(d, nil)
 
-	elem0 := p.ParseNext(dicom.ParseOptions{}, nil)
+	elem0 := p.ParseNext(nil)
 
 	require.NoError(t, p.DecoderError())
 	tag := dicomtag.Tag{0x18, 0x9755}
@@ -42,7 +42,7 @@ func testWriteDataElement(t *testing.T, bo binary.ByteOrder, implicit dicomio.Is
 	assert.Equal(t, len(elem0.Value), 1)
 	assert.Equal(t, elem0.Value[0].(string), "FooHah")
 	tag = dicomtag.Tag{Group: 0x20, Element: 0x9057}
-	elem1 := p.ParseNext(dicom.ParseOptions{}, nil)
+	elem1 := p.ParseNext(nil)
 	require.NoError(t, p.DecoderError())
 	assert.Equal(t, elem1.Tag, tag)
 	assert.Equal(t, len(elem1.Value), 2)

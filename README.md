@@ -40,7 +40,7 @@ dicomutil --extract-images-stream myfile.dcm
 ```
 
 ## Acknowledgements
-* Suyashkumar [dicom project](https://github.com/suyashkumar/dicom)
+* Suyashkumar's [dicom project](https://github.com/suyashkumar/dicom)
 * Original [go-dicom](https://github.com/gillesdemey/go-dicom)
 * Grailbio [go-dicom](https://github.com/grailbio/go-dicom) -- commits from their fork were applied to ours
 * GradientHealth for supporting work I did on this while there [gradienthealth/dicom](https://github.com/gradienthealth/dicom)

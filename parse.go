@@ -105,7 +105,7 @@ func NewUninitializedParserFromDecoder(decoder *dicomio.Decoder, frameChannel ch
 	return &p
 }
 
-func (p *Parser) Parse(options ParseOptions) (*element.DataSet, error) {
+func (p *Parser) Parse() (*element.DataSet, error) {
 	// Change the transfer syntax for the rest of the file.
 	endian, implicit, err := p.parsedElements.TransferSyntax()
 	if err != nil {
@@ -156,7 +156,7 @@ func (p *Parser) Parse(options ParseOptions) (*element.DataSet, error) {
 				}
 			}
 		}
-		if options.ReturnTags == nil || (options.ReturnTags != nil && tagInList(elem.Tag, options.ReturnTags)) {
+		if p.Opts.ReturnTags == nil || (p.Opts.ReturnTags != nil && tagInList(elem.Tag, p.Opts.ReturnTags)) {
 			p.parsedElements.Elements = append(p.parsedElements.Elements, elem)
 		}
 

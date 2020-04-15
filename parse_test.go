@@ -22,7 +22,7 @@ func mustReadFile(path string, options dicom.ParseOptions) *element.DataSet {
 		log.Panic(err)
 	}
 
-	data, err := p.Parse(options)
+	data, err := p.Parse()
 	// pixelData, _ := data.FindElementByName("PixelData")
 	// _ = pixelData
 	if err != nil {

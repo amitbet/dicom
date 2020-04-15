@@ -60,7 +60,7 @@ func main() {
 		go writeStreamingFrames(frameChannel, &wg)
 
 		// Begin parsing
-		parsedData, err = p.Parse(dicom.ParseOptions{})
+		parsedData, err = p.Parse()
 		if err != nil {
 			log.Panic("error parsing", err)
 		}
@@ -74,7 +74,8 @@ func main() {
 		if err != nil {
 			log.Panic("error creating new parser", err)
 		}
-		parsedData, err = p.Parse(dicom.ParseOptions{DropPixelData: !*extractImages})
+		p.Opts.DropPixelData = !*extractImages
+		parsedData, err = p.Parse()
 		if parsedData == nil || err != nil {
 			log.Panicf("Error reading %s: %v", path, err)
 		}

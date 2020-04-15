@@ -76,7 +76,7 @@ func TestReadWriteFileHeader(t *testing.T) {
 	d := dicomio.NewBytesDecoder(bytes, binary.LittleEndian, dicomio.ImplicitVR)
 	p, err := dicom.NewParserFromDecoder(d, nil)
 	require.NoError(t, err)
-	ds, err := p.Parse(dicom.ParseOptions{})
+	ds, err := p.Parse()
 	require.NoError(t, err)
 	elems := ds.Elements
 	require.NoError(t, d.Finish())

@@ -20,6 +20,7 @@ func mustReadFile(path string, options dicom.ParseOptions) *element.DataSet {
 	if err != nil {
 		log.Panic(err)
 	}
+
 	data, err := p.Parse(options)
 	// pixelData, _ := data.FindElementByName("PixelData")
 	// _ = pixelData
@@ -40,7 +41,7 @@ func TestAllFiles(t *testing.T) {
 			continue
 		}
 		t.Logf("Reading %s", name)
-		_ = mustReadFile("examples/"+name, dicom.ParseOptions{})
+		_ = mustReadFile("examples/"+name, dicom.ParseOptions{ReadExtraByteForOddAttributeLength: true})
 	}
 }
 

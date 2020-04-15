@@ -227,6 +227,11 @@ type Decoder struct {
 	// Stack of old limits. Used by {Push,Pop}Limit.
 	// INVARIANT: oldLimits[] store values in decreasing order.
 	stateStack []stackEntry
+
+	// odd attribute length problem handling (by default vl is respected, exact bytes are read)
+	// this can be solved in two ways: reading vl bytes and padding with zero or reading vl+1 bytes
+	// see DCMTK dcmAcceptOddAttributeLength option: https://support.dcmtk.org/docs/dcobject_8h.html#aeec6e27698d5da091e42ff8121fa3c88
+	ReadExtraByteForOddAttributeLength bool
 }
 
 // NewDecoder creates a decoder object that reads up to "limit" bytes from "in".

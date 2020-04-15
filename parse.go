@@ -183,10 +183,10 @@ func (p *parser) ParseNext(options ParseOptions, itemContext []interface{}) *ele
 	var vr string // Value Representation
 	var vl uint32 // Value Length
 	if implicit == dicomio.ImplicitVR {
-		vr, vl = readImplicit(p.decoder, tag)
+		vr, vl = p.readImplicit(p.decoder, tag)
 	} else {
 		doassert(implicit == dicomio.ExplicitVR, implicit)
-		vr, vl = readExplicit(p.decoder, tag)
+		vr, vl = p.readExplicit(p.decoder, tag)
 	}
 	var data []interface{}
 
@@ -226,14 +226,14 @@ func (p *parser) ParseNext(options ParseOptions, itemContext []interface{}) *ele
 		if vl == element.VLUndefinedLength {
 			var image element.PixelDataInfo
 			image.IsEncapsulated = true
-			image.Offsets = readBasicOffsetTable(p.decoder) // TODO(saito) Use the offset table.
+			image.Offsets = p.readBasicOffsetTable(p.decoder) // TODO(saito) Use the offset table.
 			if len(image.Offsets) > 1 {
 				dicomlog.Vprintf(1, "dicom.ReadElement: Multiple images not supported yet. Combining them into a byte sequence: %v", image.Offsets)
 			}
 			for p.decoder.Len() > 0 {
 				frameOffset := p.decoder.GetPos() + 8 //current pos + itemTag(32bit) + length(32bit)
 
-				chunk, endOfItems := readRawItem(p.decoder)
+				chunk, endOfItems := p.readRawItem(p.decoder)
 				frameSize := len(chunk)
 
 				if p.decoder.Error() != nil {
@@ -524,6 +524,11 @@ type ParseOptions struct {
 	// StopAtag defines a tag at which when read (or a tag with a greater
 	// value than it is read), the program will stop parsing the dicom file.
 	StopAtTag *dicomtag.Tag
+
+	// odd attribute length problem handling (by default vl is respected, exact bytes are read)
+	// this can be solved in two ways: reading vl bytes and padding with zero or reading vl+1 bytes
+	// see DCMTK dcmAcceptOddAttributeLength option: https://support.dcmtk.org/docs/dcobject_8h.html#aeec6e27698d5da091e42ff8121fa3c88
+	ReadExtraByteForOddAttributeLength bool
 }
 
 // readNativeFrames reads NativeData frames from a Decoder based on already parsed pixel information
@@ -622,10 +627,10 @@ func readNativeFrames(d *dicomio.Decoder, parsedData *element.DataSet, frameChan
 
 // Read an Item object as raw bytes, w/o parsing them into DataElement. Used to
 // parse pixel data.
-func readRawItem(d *dicomio.Decoder) ([]byte, bool) {
+func (p *parser) readRawItem(d *dicomio.Decoder) ([]byte, bool) {
 	tag := readTag(d)
 	// Item is always encoded implicit. PS3.6 7.5
-	vr, vl := readImplicit(d, tag)
+	vr, vl := p.readImplicit(d, tag)
 	if d.Error() != nil {
 		return nil, true
 	}
@@ -653,8 +658,8 @@ func readRawItem(d *dicomio.Decoder) ([]byte, bool) {
 
 // Read the basic offset table. This is the first Item object embedded inside
 // PixelData element. P3.5 8.2. P3.5, A4 has a better example.
-func readBasicOffsetTable(d *dicomio.Decoder) []uint32 {
-	data, endOfData := readRawItem(d)
+func (p *parser) readBasicOffsetTable(d *dicomio.Decoder) []uint32 {
+	data, endOfData := p.readRawItem(d)
 	if endOfData {
 		d.SetErrorf("basic offset table not found")
 	}
@@ -682,7 +687,7 @@ func readTag(buffer *dicomio.Decoder) dicomtag.Tag {
 }
 
 // Read the VR from the DICOM ditionary The VL is a 32-bit unsigned integer
-func readImplicit(buffer *dicomio.Decoder, tag dicomtag.Tag) (string, uint32) {
+func (p *parser) readImplicit(buffer *dicomio.Decoder, tag dicomtag.Tag) (string, uint32) {
 	vr := "UN"
 	if entry, err := dicomtag.Find(tag); err == nil {
 		vr = entry.VR
@@ -690,15 +695,19 @@ func readImplicit(buffer *dicomio.Decoder, tag dicomtag.Tag) (string, uint32) {
 
 	vl := buffer.ReadUInt32()
 	if vl != element.VLUndefinedLength && vl%2 != 0 {
-		buffer.SetErrorf("Encountered odd length (vl=%v) when reading implicit VR '%v' for tag %s", vl, vr, dicomtag.DebugString(tag))
-		vl = 0
+		// odd attribute length problem
+		// this can be solved in two ways: reading vl bytes and padding with zero or reading vl+1 bytes
+		// see DCMTK dcmAcceptOddAttributeLength option: https://support.dcmtk.org/docs/dcobject_8h.html#aeec6e27698d5da091e42ff8121fa3c88
+		if p.op.ReadExtraByteForOddAttributeLength {
+			vl += 1
+		}
 	}
 	return vr, vl
 }
 
 // The VR is represented by the next two consecutive bytes
 // The VL depends on the VR value
-func readExplicit(buffer *dicomio.Decoder, tag dicomtag.Tag) (string, uint32) {
+func (p *parser) readExplicit(buffer *dicomio.Decoder, tag dicomtag.Tag) (string, uint32) {
 	vr := buffer.ReadString(2)
 	var vl uint32
 	if vr == "US" {
@@ -721,8 +730,12 @@ func readExplicit(buffer *dicomio.Decoder, tag dicomtag.Tag) (string, uint32) {
 		}
 	}
 	if vl != element.VLUndefinedLength && vl%2 != 0 {
-		buffer.SetErrorf("Encountered odd length (vl=%v) when reading explicit VR %v for tag %s", vl, vr, dicomtag.DebugString(tag))
-		vl = 0
+		// odd attribute length problem
+		// this can be solved in two ways: reading vl bytes and padding with zero or reading vl+1 bytes
+		// see DCMTK dcmAcceptOddAttributeLength option: https://support.dcmtk.org/docs/dcobject_8h.html#aeec6e27698d5da091e42ff8121fa3c88
+		if p.op.ReadExtraByteForOddAttributeLength {
+			vl += 1
+		}
 	}
 	return vr, vl
 }

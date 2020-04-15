@@ -604,7 +604,7 @@ func readNativeFrames(d *dicomio.Decoder, parsedData *element.DataSet, frameChan
 				Data:          make([][]int, int(pixelsPerFrame)),
 			},
 			FileOffset:  d.GetPos(),
-			SizeInBytes: pixelsPerFrame * samplesPerPixel * (bitsAllocated / 2),
+			SizeInBytes: pixelsPerFrame * samplesPerPixel * (bitsAllocated / 8),
 		}
 		for pixel := 0; pixel < int(pixelsPerFrame); pixel++ {
 			currentPixel := make([]int, samplesPerPixel)

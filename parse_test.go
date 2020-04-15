@@ -1,9 +1,13 @@
 package dicom_test
 
 import (
+	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
+	"path"
 	"sort"
+	"strings"
 	"testing"
 
 	"github.com/amitbet/dicom"
@@ -134,7 +138,7 @@ func TestReadOptions(t *testing.T) {
 	// Test Stop at Tag
 	data = mustReadFile("examples/IM-0001-0001.dcm",
 		dicom.ParseOptions{
-			//DropPixelData: true,
+			DropPixelData: true,
 			// Study Instance UID Element tag is Tag{0x0020, 0x000D}
 			StopAtTag: &dicomtag.StudyInstanceUID,
 		})
@@ -151,5 +155,50 @@ func TestReadOptions(t *testing.T) {
 func BenchmarkParseSingle(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		_ = mustReadFile("examples/IM-0001-0001.dcm", dicom.ParseOptions{})
+	}
+}
+
+//parseDicomFile parses the dicom file and returns a Study object
+func parseDicomFile(dicomFileName string) (*element.DataSet, error) {
+	p, err := dicom.NewParserFromFile(dicomFileName, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	dataset, err := p.Parse() // parse whole dicom
+	if err != nil {
+		return nil, err
+	}
+	return dataset, nil
+}
+
+func TestDicomToJson(t *testing.T) {
+	//dir := "./dicoms/internet"
+	dir := "./examples"
+	files, err := ioutil.ReadDir(dir)
+	if err != nil {
+		t.Error("TestDicomToJson: Error in reading file: ", err)
+	}
+
+	for _, f := range files {
+		fname := path.Join(dir, f.Name())
+		if strings.HasPrefix(f.Name(), ".") {
+			continue
+		}
+
+		ds, err := parseDicomFile(fname)
+		//ds, err := ParseDicomFile("./dicoms/CHC/CT000006_anon")
+		if err != nil {
+			t.Error("Error in parsing dicom: ", fname, err)
+		}
+		// pd, _ := ds.FindElementByName("PixelData")
+		// _ = pd
+
+		json, err := ds.GetDataSetAsJson(true, true)
+		if err != nil {
+			t.Error("TestDicomToJson: Error in creating json: ", err)
+		}
+
+		fmt.Println("\"", fname, "\"", ":", json, ",")
 	}
 }

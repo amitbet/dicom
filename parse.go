@@ -166,12 +166,16 @@ func (p *Parser) Parse() (*element.DataSet, error) {
 
 func (p *Parser) ParseNext(itemContext []interface{}) *element.Element {
 	tag := readTag(p.decoder)
-	if tag == dicomtag.PixelData && p.Opts.DropPixelData {
+	if tag == dicomtag.PixelData && p.Opts.DropPixelData && itemContext == nil {
 		return element.EndOfData
 	}
 
 	// Return nil if the tag is greater than the StopAtTag if a StopAtTag is given
-	if p.Opts.StopAtTag != nil && tag.Group >= p.Opts.StopAtTag.Group && tag.Element >= p.Opts.StopAtTag.Element {
+	if p.Opts.StopAtTag != nil &&
+		tag.Group >= p.Opts.StopAtTag.Group &&
+		tag.Element >= p.Opts.StopAtTag.Element &&
+		itemContext == nil &&
+		tag != dicomtag.Item {
 		return element.EndOfData
 	}
 	// The elements for group 0xFFFE should be Encoded as Implicit VR.

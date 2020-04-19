@@ -27,7 +27,7 @@ func getElementValueAsJsonObj(el *Element, omitBinaryVals, addReadableNames bool
 	var val interface{}
 	// ----- item in sequence:-----
 	if el.Tag == dicomtag.Item {
-		itemVal, err := getElementsAsJsonObj(el.Value, omitBinaryVals, addReadableNames)
+		itemVal, err := getElementsAsJsonObj(el.Value, omitBinaryVals, addReadableNames, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -66,7 +66,7 @@ func getElementValueAsJsonObj(el *Element, omitBinaryVals, addReadableNames bool
 }
 
 //getElementsAsJsonObj will return an object that represents the element array
-func getElementsAsJsonObj(elements []interface{}, omitBinaryVals, addReadableNames bool) ([]interface{}, error) {
+func getElementsAsJsonObj(elements []interface{}, omitBinaryVals, addReadableNames bool, tagsFilter map[string]interface{}) ([]interface{}, error) {
 
 	jObjMap := map[string]interface{}{}
 	var err error
@@ -78,7 +78,17 @@ func getElementsAsJsonObj(elements []interface{}, omitBinaryVals, addReadableNam
 			err = errors.New("Failed to cast value to element")
 			return nil, err
 		}
-		tagStr := fmt.Sprintf("%04x%04x", el.Tag.Group, el.Tag.Element)
+		tagStr := fmt.Sprintf("%04X%04X", el.Tag.Group, el.Tag.Element)
+
+		if tagsFilter != nil && len(tagsFilter) > 0 {
+			_, wantedTag := tagsFilter[tagStr]
+
+			// skip tag if not required specifically
+			if !wantedTag {
+				continue
+			}
+		}
+
 		val, err := getElementValueAsJsonObj(el, omitBinaryVals, addReadableNames)
 		if err != nil {
 			return nil, err
@@ -105,12 +115,37 @@ func (ds *DataSet) GetDataSetAsJsonObj(omitBinaryVals, addReadableNames bool) ([
 	for _, el := range ds.Elements {
 		elems = append(elems, el)
 	}
-	return getElementsAsJsonObj(elems, omitBinaryVals, addReadableNames)
+	return getElementsAsJsonObj(elems, omitBinaryVals, addReadableNames, nil)
+}
+
+//GetDataSetAsJsonObjFiltered returns the DICOM dataset as an object for JSON serialization with tag filtering by given tags
+func (ds *DataSet) GetDataSetAsJsonObjFiltered(omitBinaryVals, addReadableNames bool, tags []dicomtag.Tag) ([]interface{}, error) {
+	tagsFilter := map[string]interface{}{}
+	for _, tag := range tags {
+		tagStr := fmt.Sprintf("%04X%04X", tag.Group, tag.Element)
+		tagsFilter[tagStr] = struct{}{}
+	}
+
+	elems := []interface{}{}
+	for _, el := range ds.Elements {
+		elems = append(elems, el)
+	}
+	return getElementsAsJsonObj(elems, omitBinaryVals, addReadableNames, tagsFilter)
 }
 
 //GetDataSetAsJson marshals a dataset to a JSON string
 func (ds *DataSet) GetDataSetAsJson(omitBinaryVals, addReadableNames bool) (string, error) {
 	jObj, err := ds.GetDataSetAsJsonObj(omitBinaryVals, addReadableNames)
+	if err != nil {
+		return "undefined", err
+	}
+	bytes, err := json.Marshal(jObj[0])
+	return string(bytes), err
+}
+
+//GetDataSetAsJsonFiltered marshals a dataset to a JSON string with filtering by given tags
+func (ds *DataSet) GetDataSetAsJsonFiltered(omitBinaryVals, addReadableNames bool, tags []dicomtag.Tag) (string, error) {
+	jObj, err := ds.GetDataSetAsJsonObjFiltered(omitBinaryVals, addReadableNames, tags)
 	if err != nil {
 		return "undefined", err
 	}

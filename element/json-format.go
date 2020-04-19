@@ -12,7 +12,7 @@ type JsonDicomVal struct {
 	Name string `json:"name,omitempty"` //optional addition for better understanding
 	Vr   string `json:"vr"`
 	//Tag string `json:"Tag"`
-	Value interface{} `json:"Value"`
+	Value interface{} `json:"Value,omitempty"`
 }
 type JsonDicomPixelData struct {
 	Frames []JsonDicomFrame `json:"frames"`

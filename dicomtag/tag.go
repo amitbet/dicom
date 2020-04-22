@@ -27,6 +27,14 @@ type Tag struct {
 	Element uint16
 }
 
+func GetTagFromString(tagStr string) Tag {
+	groupStr := "0x" + tagStr[0:4]
+	elStr := "0x" + tagStr[4:8]
+	group, _ := strconv.ParseInt(groupStr, 0, 16)
+	el, _ := strconv.ParseInt(elStr, 0, 16)
+	return Tag{Group: uint16(group), Element: uint16(el)}
+}
+
 // Compare returns -1, 0, or 1 if t<other, t==other, t>other, respectively.
 // Tags are ordered first by Group, then by Element.
 func (t Tag) Compare(other Tag) int {

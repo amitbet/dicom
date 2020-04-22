@@ -191,14 +191,29 @@ func TestDicomToJson(t *testing.T) {
 		if err != nil {
 			t.Error("Error in parsing dicom: ", fname, err)
 		}
-		// pd, _ := ds.FindElementByName("PixelData")
-		// _ = pd
 
 		json, err := ds.GetDataSetAsJson(true, true)
 		if err != nil {
 			t.Error("TestDicomToJson: Error in creating json: ", err)
 		}
-
+		_ = json
 		fmt.Println("\"", fname, "\"", ":", json, ",")
 	}
+}
+
+func TestDicomToJsonComparison(t *testing.T) {
+
+	fname := "./examples/0124.000F_anon.img"
+	ds, err := parseDicomFile(fname)
+	if err != nil {
+		t.Error("Error in parsing dicom: ", fname, err)
+	}
+
+	filter := element.GetDefaultMetadataTagFilter()
+	json, err := ds.GetDataSetAsJsonFiltered(true, false, filter)
+	if err != nil {
+		t.Error("TestDicomToJson: Error in creating json: ", err)
+	}
+
+	fmt.Println("\"", fname, "\"", ":", json, ",")
 }

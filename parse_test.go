@@ -192,7 +192,7 @@ func TestDicomToJson(t *testing.T) {
 			t.Error("Error in parsing dicom: ", fname, err)
 		}
 
-		json, err := ds.GetDataSetAsJson(true, true)
+		json, err := ds.GetDataSetAsJson(true, true, false)
 		if err != nil {
 			t.Error("TestDicomToJson: Error in creating json: ", err)
 		}
@@ -210,7 +210,7 @@ func TestDicomToJsonComparison(t *testing.T) {
 	}
 
 	filter := element.GetDefaultMetadataTagFilter()
-	json, err := ds.GetDataSetAsJsonFiltered(true, false, filter)
+	json, err := ds.GetDataSetAsJsonFiltered(true, false, false, filter)
 	if err != nil {
 		t.Error("TestDicomToJson: Error in creating json: ", err)
 	}

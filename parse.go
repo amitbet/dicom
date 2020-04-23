@@ -239,9 +239,8 @@ func (p *Parser) parseNext(itemContext []interface{}) *element.Element {
 				dicomlog.Vprintf(1, "dicom.ReadElement: Multiple images not supported yet. Combining them into a byte sequence: %v", image.Offsets)
 			}
 			for p.decoder.Len() > 0 {
-				frameOffset := p.decoder.GetPos() + 8 //current pos + itemTag(32bit) + length(32bit)
 
-				chunk, endOfItems := p.readRawItem(p.decoder)
+				chunk, frameOffset, endOfItems := p.readRawItem(p.decoder)
 				frameSize := len(chunk)
 
 				if p.decoder.Error() != nil {
@@ -635,39 +634,40 @@ func readNativeFrames(d *dicomio.Decoder, parsedData *element.DataSet, frameChan
 
 // Read an Item object as raw bytes, w/o parsing them into DataElement. Used to
 // parse pixel data.
-func (p *Parser) readRawItem(d *dicomio.Decoder) ([]byte, bool) {
+// returns: the byte array read, the file offset before reading and a bool = isLastItem
+func (p *Parser) readRawItem(d *dicomio.Decoder) ([]byte, int64, bool) {
 	tag := readTag(d)
 	// Item is always encoded implicit. PS3.6 7.5
 	vr, vl := p.readImplicit(d, tag)
 	if d.Error() != nil {
-		return nil, true
+		return nil, 0, true
 	}
 	if tag == dicomtag.SequenceDelimitationItem {
 		if vl != 0 {
 			d.SetErrorf("SequenceDelimitationItem's VL != 0: %v", vl)
 		}
-		return nil, true
+		return nil, 0, true
 	}
 	if tag != dicomtag.Item {
 		d.SetErrorf("Expect Item in pixeldata but found tag %v", dicomtag.DebugString(tag))
-		return nil, false
+		return nil, 0, false
 	}
 	if vl == element.VLUndefinedLength {
 		d.SetErrorf("Expect defined-length item in pixeldata")
-		return nil, false
+		return nil, 0, false
 	}
 	if vr != "NA" {
 		d.SetErrorf("Expect NA item, but found %s", vr)
-		return nil, true
+		return nil, 0, true
 	}
-
-	return d.ReadBytes(int(vl)), false
+	pos := d.GetPos()
+	return d.ReadBytes(int(vl)), pos, false
 }
 
 // Read the basic offset table. This is the first Item object embedded inside
 // PixelData element. P3.5 8.2. P3.5, A4 has a better example.
 func (p *Parser) readBasicOffsetTable(d *dicomio.Decoder) []uint32 {
-	data, endOfData := p.readRawItem(d)
+	data, _, endOfData := p.readRawItem(d)
 	if endOfData {
 		d.SetErrorf("basic offset table not found")
 	}

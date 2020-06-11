@@ -71,8 +71,10 @@ func getElementValueAsJsonObj(el *Element, omitBinaryVals, addReadableNames, ski
 		}
 	} else if (el.VR == "OB" || el.VR == "OW") && omitBinaryVals {
 	} else {
+		if el.Value == nil {
+			return nil, nil
+		}
 		val = el.Value
-		// ----- sequences :-----
 	}
 	return val, nil
 }
